@@ -1,0 +1,89 @@
+<script type="text/javascript">
+<% if !@project.nil? %>
+$(document).ready(function() {
+    
+    $("h3").eq(0).after("<a  id='query_copy_from_ancestor' title='从父项目中复制'>复制自定义查询</a><input type='hidden' id='query_copy_from_ancestor_status' value='hide' ><br><div id='ancestor_query_list' style='background: #f7f7f7;margin: 4px 7px 8px 6px;' >!!!</div>");
+
+    $("#ancestor_query_list").hide();
+    g_is_hide = true;
+  
+    $("#query_copy_from_ancestor").click(function() {
+
+        if (g_is_hide) {
+            get_ancestor_queries('<%= @project.id %>');
+            g_is_hide = false
+            $("#ancestor_query_list").show();
+        } else {
+            g_is_hide = true
+            $("#ancestor_query_list").hide();      
+        }
+    });
+
+    
+    
+    function get_ancestor_queries(project_id) {
+        $.ajax({
+            type: "POST",
+            url: "/issue_query_copy/<%= @project.id %>/get_ancestor_queries",
+            data: {},
+            dataType: "html",
+            success: function(data) {
+                $("#ancestor_query_list").html("");
+          
+            
+                query_hash = eval("(" + data + ")");
+
+                for (idx in query_hash) {
+                    query_infos = query_hash[idx];
+                    $("#ancestor_query_list").append("<span style='margin-left: 4px;color:#000000;font-weight: 700;'>"+query_infos[0].project_name + "</span><br>");
+                    for (i in query_infos) {
+                        query_info = query_infos[i];
+                        $("#ancestor_query_list").append( "<span style='display:inline-block;width: 100%'><span style='margin-left: 8px;font-size: 10px;'>-- <span id='query_"+query_info.id+"'>" + query_info.query_name + "</span><a style='float: right;' id='"+query_info.id+"' class='copy_query_button'  >复制</a></span><span><br>");
+                    }
+                    
+                } 
+                
+                $(".copy_query_button").click(function() {
+                    query_id = $(this).attr('id');
+                    query_name = $("#query_" + query_id).html();
+                
+                    var res = confirm("您确定要复制自定义查询‘"+query_name+"’？");
+                    if (res == true) {
+                        copy_query(query_id);
+                    } 
+                });
+          
+                
+            },
+            error: function(){
+                alert("error");
+            }
+        });
+          
+    }
+    
+    function copy_query(query_copy_id) {
+        $.ajax({
+            type: "POST",
+            url: "/issue_query_copy/<%= @project.id %>/copy_query",
+            data: {user_id:'<%= User.current.id %>', query_id:query_copy_id },
+            dataType: "html",
+            success: function(data) {
+                if (data == '1') {
+                    window.location.reload();
+                }
+                
+            },
+            error: function(){
+                alert("error");
+            }
+        });        
+    
+    
+    
+    }
+    
+});
+<% end %>
+
+</script>
